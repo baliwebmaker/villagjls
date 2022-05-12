@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Inspiration&family=Nunito:wght@300&display=swap');
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@layer base {
+	body{
+		@apply font-body;
+	}
+
+	.villadetail{
+		@apply mt-5;
+	}
+	.villadetail ul{
+		@apply flex flex-wrap list-disc pl-4;
+	}
+
+	.villadetail ul li{
+		@apply m-px md:my-1.5 md:mx-2.5 md:shrink-0 md:grow md:basis-1/4 shrink grow-0 basis-full;
+	}
+
+	.villadetail h3{
+		@apply text-base font-semibold mt-4;
+	}
+}  
+[x-cloak] { display: none !important; }
