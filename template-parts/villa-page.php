@@ -19,6 +19,8 @@
     </div>
     <?php the_content() ?>
     <?php endwhile; endif; ?>
+    <!--related villas -->
+    <?php get_template_part('template-parts/related-villa')?>
     </div>
 </main>
 </div>
