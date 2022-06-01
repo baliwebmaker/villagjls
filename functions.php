@@ -53,7 +53,7 @@ if ( ! function_exists( 'villagjls_scripts' ) ) :
         
 
         if( is_page_template( 'villa-page.php' )){
-
+            wp_enqueue_script('recaptcha','https://www.google.com/recaptcha/api.js?render=6Ld0SAEgAAAAACz-EBJRejBqSgXZnVNo768gX5Lo', array(), null, false );
             //add script into theme and inject defer attributes in the <script>s
             $scripts_ids = array('datepicker','reservation-form','alpinejs');
             $scripts_srcs = array('datepicker.js','reservationform.js','alpinejs.js');
@@ -98,9 +98,7 @@ function twcss_add_menu_att($atts){
 }
 add_filter( 'nav_menu_link_attributes' , 'twcss_add_menu_att' );
 
-/* register post type
-special package
-*/
+/* register post type special package */
 
 function register_special_package(){
     
@@ -224,3 +222,10 @@ function register_meta_boxes(){
 add_action( 'init', 'register_meta_boxes' );
 
 include get_theme_file_path( '/functions/utilities.php' );
+
+/* add tag support to pages */
+function categories_support_page(){
+    register_taxonomy_for_object_type('category','page');
+}
+
+add_action('init','categories_support_page');
