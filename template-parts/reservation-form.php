@@ -7,8 +7,9 @@
 >
 <!--modal success -->
 <?php get_template_part('template-parts/success-modal');?>
-
 <input type="hidden" name="subject" value="Reservation for <?php the_title() ?>" />
+<input type="hidden" id="recaptchaToken" name="recaptchaToken" x-ref="recaptchaToken" />
+
 <div class="mt-8 max-w-md">
      <div class="grid grid-cols-1 gap-6 text-sm">
         <label class="block">
