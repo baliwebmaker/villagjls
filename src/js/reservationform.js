@@ -6,6 +6,22 @@ window.ReservationForm  = function () {
 	let nonce = formReservation.dataset.nonce;
 	let fields = ['fullname','email','phone','checkin','checkout','number_of_guest','request'];
 	let datepicker = new datePicker();
+	
+	let captcha = document.getElementById('recaptchaToken');
+
+	grecaptcha.ready(() => {
+		grecaptcha.execute('6Ld0SAEgAAAAACz-EBJRejBqSgXZnVNo768gX5Lo', {action: 'submit_reservation_form'})
+		.then((token) => {
+			this.$refs.recaptchaToken.value = token;
+		});
+		// refresh token every minute to prevent expiration
+		setInterval(() => {
+		grecaptcha.execute('6Ld0SAEgAAAAACz-EBJRejBqSgXZnVNo768gX5Lo', {action: 'submit_reservation_form'})
+		.then((token) => {
+			this.$refs.recaptchaToken.value = token;
+		});
+		}, 60000);
+	});
 
 	return {
 
@@ -40,7 +56,6 @@ window.ReservationForm  = function () {
         	}
         	return validate;
        	},
-	
 		submitForm() {  
 			//compensate height of reservation when error messages display
 			this.$refs.reservation.style.maxHeight = '100%';
@@ -67,10 +82,10 @@ window.ReservationForm  = function () {
 	            	'Accept': 'application/json' 
 	            },
 	            credentials: 'same-origin',
-	            body: 'action=submit_reservation_form&nonce='+ nonce +'&formdata='+ JSON.stringify( this.formData ) ,
+	            body: 'action=submit_reservation_form&nonce='+ nonce +'&formdata='+ JSON.stringify( this.formData )+'&captcha='+captcha.value ,
 	        })
 	        .then( async (response) => {
-                let data = await response.json();
+                let data = await response.json(); console.log(data);
 
                 if (data.status == 'true') {
                 	this.$nextTick(() => {
@@ -80,7 +95,7 @@ window.ReservationForm  = function () {
                 		this.modalHeaderText = "Thank You!";
                 		this.modalBodyText = "Your form have been successfully submited!";
                 	});
-                 } else { 
+                 } else {
                  	throw new Error("Your registration failed");
                  }
                  //clear forms data after form submitted
@@ -89,8 +104,8 @@ window.ReservationForm  = function () {
                  this.datepicker.unsetDateValues();
                 		 
             })
-	        .catch(() => {
-	        	
+	        .catch((err) => {
+	        	alert(err);
 	        })
 	        .finally(() => {
 	        	this.loading = false;
