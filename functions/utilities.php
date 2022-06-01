@@ -27,9 +27,18 @@ function disable_emojis() {
     remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );
     
     // Remove from TinyMCE
-    add_filter( 'tiny_mce_plugins', 'disable_emojis_tinymce' );
+    add_filter( 'tiny_mce_plugins', 'disable_emojicons_tinymce' );
 }
 add_action( 'init', 'disable_emojis' );
+
+function disable_emojicons_tinymce( $plugins ) {
+    if ( is_array( $plugins ) ) {
+        return array_diff( $plugins, array( 'wpemoji' ) );
+    } else {
+        return array();
+    }
+ }
+ 
 /*--- EXTRA FUNCTIONS ---*/
 function get_meta_value($value, $default) {
 	if($value == '') {
@@ -94,60 +103,85 @@ class tailwind_walker_nav_menu extends Walker_Nav_menu {
     add_action('wp_ajax_nopriv_submit_reservation_form', 'submit_reservation_form');
 
     function submit_reservation_form() {
+        $captcha = filter_input(INPUT_POST, 'captcha', FILTER_SANITIZE_STRING);
 
-        $nonce = $_REQUEST['nonce'];
-        if (! wp_verify_nonce($nonce , 'submit_reservation_form_nonce') ) {
-            die('No naughty business please.');
-        }
-        else{
-            $formdata = stripslashes($_POST['formdata']); 
-            $formdata = json_decode($formdata , true);
+        if(!$captcha){
+            echo 'please check captcha form';
+        }       
 
-            $fullname = $formdata['fullname'];
-            $email = sanitize_email($formdata['email']);
-            $subject = $formdata['subject'];
-            $phone = $formdata['phone'];
-            $checkin = $formdata['checkin'];
-            $checkout = $formdata['checkout'];
-            $number_of_guest = $formdata['number_of_guest'];
-            $request = $formdata['request'];
+        $secretKey='6Ld0SAEgAAAAAFCJlM13B8PX2iRDgZMRdCc8iBv8';
+        $url = 'https://www.google.com/recaptcha/api/siteverify?secret='.urlencode($secretKey).'&response='.urlencode($captcha);
+        $response = file_get_contents($url);
+        $responseKey = json_decode($response, true);
 
-            //$recipient_email = base64_decode($formdata['sendto']);
+        //echo json_encode($responseKey); exit();
 
-            /* Email Message */
-            $body = "<h2>Reservation Message</h2>";
-            $body .= "<strong>Villa Name:</strong> ".$subject."<br/>";
-            $body .= "<strong>Nama:</strong> ".$fullname."<br/>";
-            $body .= "<strong>E-mail:</strong> ".$email."<br/>";
-            $body .= "<strong>Phone:</strong> ".$phone."<br/>";
-            $body .= "<strong>Check in date:</strong> ".$checkin."<br/>";
-            $body .= "<strong>Check out date:</strong> ".$checkout."<br/>";
-            $body .= "<strong>Number of guest:</strong> ".$number_of_guest."<br/>";
-            $body .= "<strong>Request:</strong> ".$request."<br/>";
-            
-            if( $_SERVER['REMOTE_ADDR'] === '127.0.0.1' ){
-                $result['status'] = 'true';
-            } else{
+        if($responseKey['success'] && $responseKey['action']=='submit_reservation_form'){
+            if($responseKey['score'] >= 0.5){
+                //send email
+                $nonce = $_REQUEST['nonce'];
 
-                if( function_exists('wp_mail') ) {
+            if (! wp_verify_nonce($nonce , 'submit_reservation_form_nonce') ) {
+                die('No naughty business please.');
+            }
+            else{
+                $formdata   = stripslashes($_POST['formdata']); 
+                $formdata   = json_decode($formdata , true);
 
-                    $headers = 'From: ' . $fullname . ' <' . $email . '>' . "\r\n";
+                $fullname   = filter_var($formdata['fullname'], FILTER_SANITIZE_STRING);
+                $email      = sanitize_email($formdata['email']);
+                $subject    = filter_var($formdata['subject'], FILTER_SANITIZE_STRING);
+                $phone      = filter_var($formdata['phone'], FILTER_SANITIZE_STRING);
+                $checkin    = filter_var($formdata['checkin'], FILTER_SANITIZE_STRING);
+                $checkout   = filter_var($formdata['checkout'], FILTER_SANITIZE_STRING);
+                $number_of_guest = filter_var($formdata['number_of_guest'], FILTER_SANITIZE_STRING);
+                $request    = filter_var($formdata['request'], FILTER_SANITIZE_STRING);
 
-                    if(wp_mail($recipient_email, $subject, $body, $headers)) {
-                        $result['status'] = 'true';
+                //$recipient_email = base64_decode($formdata['sendto']);
+
+                /* Email Message */
+                $body = "<h2>Reservation Message</h2>";
+                $body .= "<strong>Villa Name:</strong> ".$subject."<br/>";
+                $body .= "<strong>Nama:</strong> ".$fullname."<br/>";
+                $body .= "<strong>E-mail:</strong> ".$email."<br/>";
+                $body .= "<strong>Phone:</strong> ".$phone."<br/>";
+                $body .= "<strong>Check in date:</strong> ".$checkin."<br/>";
+                $body .= "<strong>Check out date:</strong> ".$checkout."<br/>";
+                $body .= "<strong>Number of guest:</strong> ".$number_of_guest."<br/>";
+                $body .= "<strong>Request:</strong> ".$request."<br/>";
+                
+                if( $_SERVER['REMOTE_ADDR'] === '127.0.0.1' ){
+                    $result['status'] = 'true';
+                } else{
+
+                    if( function_exists('wp_mail') ) {
+
+                        $headers = 'From: ' . $fullname . ' <' . $email . '>' . "\r\n";
+
+                        if(wp_mail($recipient_email, $subject, $body, $headers)) {
+                            $result['status'] = 'true';
+                        } else {
+                            $result['status'] = 'false';
+                        }
+                        
                     } else {
                         $result['status'] = 'false';
                     }
-                    
-                } else {
-                    $result['status'] = 'false';
+
                 }
 
+                echo json_encode($result);
+                
+                die();
+
+            }
+            }
+            elseif($responseKey['score'] < 0.5){
+                //failed spam test
             }
 
-            echo json_encode($result);
-            
-            die();
-
         }
+
+            
+
     }
